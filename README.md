@@ -1,16 +1,16 @@
 # create-monorepo
 
-A single shell script that scaffolds an opinionated, production-ready TypeScript fullstack monorepo with end-to-end type safety, in one command.
+Scaffold an opinionated, production-ready TypeScript fullstack monorepo with end-to-end type safety in one command.
 
 ```bash
-bash create-monorepo.sh my-app --install
+npm create monorepo my-app
 cd my-app
 docker compose up -d
 pnpm --filter @my-app/db migrate:dev --name init
 pnpm dev
 ```
 
-That's it. You get a working API at `http://localhost:3001` and a React app at `http://localhost:5173` that calls it through a fully typed client — no codegen step.
+You get a working API at `http://localhost:3001` and a React app at `http://localhost:5173` that calls it through a fully typed client — no codegen step.
 
 ## What you get
 
@@ -40,45 +40,64 @@ Add a route to the API and the frontend picks it up automatically through TypeSc
 ## Usage
 
 ```bash
-bash create-monorepo.sh <project-name> [scope] [--install]
+npm create monorepo <project-name> [options]
 ```
 
-| Argument | Required | Description |
-| --- | --- | --- |
-| `project-name` | yes | Lowercase letters, digits, and hyphens only. Becomes the directory name. |
-| `scope` | no | Package scope, e.g. `@myorg`. Defaults to `@<project-name>`. |
-| `--install` | no | Runs `pnpm install` and `pnpm setup:env` after scaffolding. |
-| `-h`, `--help` | no | Prints usage. |
+Equivalent invocations:
+
+```bash
+npm  create monorepo my-app
+pnpm create monorepo my-app
+yarn create monorepo my-app
+bun  create monorepo my-app
+```
+
+The CLI prompts interactively for the package scope, whether to initialize a git repository, and whether to install dependencies. Pass flags to skip prompts, or `-y/--yes` to accept all defaults.
+
+### Options
+
+| Flag | Description |
+| --- | --- |
+| `<project-name>` | Lowercase letters, digits, and hyphens. Becomes the directory name and root package name. |
+| `--scope <name>` | Package scope (e.g. `acme` → `@acme/web`). Defaults to the project name. |
+| `--no-scope` | Force unscoped package names. |
+| `--install` / `--no-install` | Install dependencies after scaffolding. Defaults to yes if `pnpm` is on `PATH`. |
+| `--git` / `--no-git` | Initialize a git repository. Defaults to yes if `git` is on `PATH`. |
+| `-y`, `--yes` | Accept all defaults; non-interactive. |
+| `-h`, `--help` | Show help. |
+| `-v`, `--version` | Show CLI version. |
 
 ### Examples
 
 ```bash
-# Minimal: project name only, scope defaults to @my-app
-bash create-monorepo.sh my-app
+# Interactive: prompts for scope, git, install
+npm create monorepo my-app
 
-# Custom org scope (recommended if you publish under an org)
-bash create-monorepo.sh my-app @acme
+# Pass-through scope flag (note the `--` separator with `npm create`)
+npm create monorepo my-app -- --scope acme
 
-# Scaffold + install dependencies in one shot
-bash create-monorepo.sh my-app @acme --install
+# Fully non-interactive, skip install
+npm create monorepo my-app -- -y --no-install
+
+# pnpm and bun do not need the `--`
+pnpm create monorepo my-app --scope acme
+bun  create monorepo my-app --scope acme
 ```
 
-## Prerequisites
+> **`npm create` flag-passing.** With `npm create`, npm consumes flags before the bin script does. To pass options through, separate them with `--`. `pnpm create`, `yarn create`, and `bun create` do not have this restriction.
 
-**Required** (script fails without these):
+## Requirements
 
-- **git** — [git-scm.com/downloads](https://git-scm.com/downloads)
-- **pnpm 9+** — `corepack enable && corepack prepare pnpm@latest --activate`
+- **Node 18+** (to run the CLI)
+- **pnpm 9+** in the scaffolded project (`corepack enable && corepack prepare pnpm@latest --activate`)
+- **Bun 1.1+** to run the scaffolded `apps/api` and `apps/worker` (`curl -fsSL https://bun.sh/install | bash`)
+- **Docker** for local Postgres + Redis via `docker compose up -d`
 
-**Required to run the scaffolded apps** (script warns but continues):
-
-- **Bun 1.1+** — `curl -fsSL https://bun.sh/install | bash` (used by `apps/api` and `apps/worker`)
-- **Docker** — for local Postgres + Redis via `docker compose up -d`
-- **Node 20+** — pinned in `.nvmrc`; pnpm enforces it via `engine-strict`
+The CLI itself only needs Node. The scaffolded apps need pnpm + Bun + Docker.
 
 ## After scaffolding
 
-Without `--install`:
+If you skipped install:
 
 ```bash
 cd <project-name>
@@ -88,8 +107,6 @@ docker compose up -d                                  # starts Postgres + Redis
 pnpm --filter @<scope>/db migrate:dev --name init     # creates initial DB migration
 pnpm dev                                              # starts api and web
 ```
-
-With `--install`, the first two steps are done for you.
 
 Then verify:
 
@@ -141,7 +158,7 @@ my-app/
 
 ## Environment variables
 
-Each app validates its own env on startup with Zod and fails fast on a clear error if anything is missing or wrong shape:
+Each app validates its own env on startup with Zod and fails fast with a clear error if anything is missing or wrong shape:
 
 - `apps/api/src/env.ts` — `NODE_ENV`, `PORT`, `DATABASE_URL`, `CORS_ORIGIN`, `LOG_LEVEL`
 - `apps/web/src/env.ts` — `VITE_API_URL` (build-time, must be `VITE_`-prefixed)
@@ -158,15 +175,52 @@ Run `pnpm setup:env` to create `.env` files from each `.env.example`.
 - **Biome instead of ESLint + Prettier** — single tool, fast, sane defaults.
 - **Vitest workspace config at the root** so a plain `vitest` runs every package's tests.
 
+## How the scaffolder works
+
+```
+create-monorepo/
+├── bin/index.ts          CLI entry — argv parsing, help/version, dispatch
+├── src/
+│   ├── cli.ts            Orchestrator: prompts → validate → scaffold → postinstall
+│   ├── prompts.ts        Interactive prompts (`prompts` lib) + `--`-eating detection
+│   ├── validate.ts       Name/scope rules, target-dir empty check
+│   ├── scaffold.ts       Template walker, dotfile rename, variable substitution
+│   └── postinstall.ts    git init (with fallback identity) + pnpm install with spinner
+├── template/             Real files — the scaffolded monorepo source of truth
+├── tests/                Unit tests + a snapshot test against a hash fixture
+└── dist/index.js         What npm publishes (Bun-built, Node-compatible, ESM)
+```
+
+Authoring is in TypeScript with Bun (`bun install`, `bun test`, `bun run dev`). The published artifact is plain JS produced by `bun build --target=node`, so end users only need Node 18+ to run `npm create monorepo`.
+
 ## Customizing the template
 
-This is one shell script. To adapt it:
+Every file the CLI emits lives under `template/` as a real, editable file — no heredocs.
 
-1. Edit `create-monorepo.sh` directly — every file the script writes is in a heredoc you can find by name.
-2. Re-run `bash create-monorepo.sh test-scaffold` against `/tmp` to verify your change works end-to-end.
-3. Run `pnpm typecheck`, `pnpm lint`, and `pnpm test` in the generated repo to confirm nothing is broken.
+1. Clone this repo and edit files under `template/` directly. Dotfiles are stored as `_gitignore`, `_npmrc`, `_env.example`, etc., and renamed at scaffold time (npm strips dotfiles when packing tarballs).
+2. Variable substitution uses `__projectName__` and `__scope__` placeholders. Add a placeholder where you need it; the scaffolder will substitute on copy. (Mustache `{{...}}` was avoided to prevent collisions with JSX inline-style syntax.)
+3. Test your change: `bun test tests/` runs the snapshot test that catches accidental drift, and `bun run dev test-app --yes --no-install` scaffolds a fresh `./test-app/` directory you can inspect.
+4. Inside the scaffolded output, run `pnpm install`, `pnpm typecheck`, and `pnpm test` to confirm nothing is broken end-to-end.
 
 Common things people change: pinned dependency versions, `apps/api` route patterns, the Prisma starter schema, the Docker Compose services, the CI workflow.
+
+## Development
+
+```bash
+bun install
+bun run dev my-test-app --yes --no-install   # runs the CLI in dev (TS direct, no build)
+bun run typecheck                             # tsc --noEmit
+bun test tests/                               # unit + snapshot tests
+bun run build                                 # produces dist/index.js for publish
+```
+
+When you change template files intentionally, regenerate the fixture so the snapshot test passes again:
+
+```bash
+UPDATE_SNAPSHOTS=1 bun test tests/
+```
+
+The CI workflow (`.github/workflows/ci.yml`) runs the Bun toolchain plus a Node 18/20/22 smoke matrix that scaffolds a project, installs its deps under `pnpm`, and typechecks it — catching template breakage before merge.
 
 ## License
 
