@@ -1,0 +1,32 @@
+{
+  "name": "@__scope__/api",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "bun": ">=1.1.0"
+  },
+  "exports": {
+    "./routes": "./src/routes.ts"
+  },
+  "scripts": {
+    "dev": "bun --watch run src/index.ts",
+    "build": "bun build src/index.ts --target=bun --outdir=dist",
+    "start": "bun run dist/index.js",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@__scope__/db": "workspace:*",
+    "@__scope__/shared-types": "workspace:*",
+    "@hono/zod-validator": "^0.4.0",
+    "hono": "^4.6.0",
+    "zod": "^3.23.0"
+  },
+  "devDependencies": {
+    "@__scope__/config": "workspace:*",
+    "@types/bun": "^1.1.0",
+    "typescript": "^5.7.0",
+    "vitest": "^2.1.0"
+  }
+}

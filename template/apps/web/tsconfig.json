@@ -1,0 +1,9 @@
+{
+  "extends": "@__scope__/config/tsconfig/react.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "types": ["vitest/globals", "@testing-library/jest-dom"]
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist"]
+}

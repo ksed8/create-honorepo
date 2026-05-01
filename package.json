@@ -1,0 +1,35 @@
+{
+  "name": "create-monorepo",
+  "version": "0.1.0",
+  "description": "Scaffold an opinionated TypeScript monorepo (pnpm + Turbo + Hono + Vite + Prisma)",
+  "type": "module",
+  "license": "MIT",
+  "bin": {
+    "create-monorepo": "./dist/index.js"
+  },
+  "files": [
+    "dist",
+    "template",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build": "bun build bin/index.ts --target=node --outdir dist --format=esm --sourcemap=external",
+    "dev": "bun run bin/index.ts",
+    "test": "bun test tests/",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "bun run build"
+  },
+  "dependencies": {
+    "picocolors": "^1.1.1",
+    "prompts": "^2.4.2"
+  },
+  "devDependencies": {
+    "@types/prompts": "^2.4.9",
+    "bun-types": "^1.1.42",
+    "typescript": "^5.7.2"
+  }
+}
