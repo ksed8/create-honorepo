@@ -1,9 +1,9 @@
-# create-monorepo
+# create-honorepo
 
 Scaffold an opinionated, production-ready TypeScript fullstack monorepo with end-to-end type safety in one command.
 
 ```bash
-npm create monorepo my-app
+npm create honorepo my-app
 cd my-app
 docker compose up -d
 pnpm --filter @my-app/db migrate:dev --name init
@@ -40,16 +40,16 @@ Add a route to the API and the frontend picks it up automatically through TypeSc
 ## Usage
 
 ```bash
-npm create monorepo <project-name> [options]
+npm create honorepo <project-name> [options]
 ```
 
 Equivalent invocations:
 
 ```bash
-npm  create monorepo my-app
-pnpm create monorepo my-app
-yarn create monorepo my-app
-bun  create monorepo my-app
+npm  create honorepo my-app
+pnpm create honorepo my-app
+yarn create honorepo my-app
+bun  create honorepo my-app
 ```
 
 The CLI prompts interactively for the package scope, whether to initialize a git repository, and whether to install dependencies. Pass flags to skip prompts, or `-y/--yes` to accept all defaults.
@@ -71,17 +71,17 @@ The CLI prompts interactively for the package scope, whether to initialize a git
 
 ```bash
 # Interactive: prompts for scope, git, install
-npm create monorepo my-app
+npm create honorepo my-app
 
 # Pass-through scope flag (note the `--` separator with `npm create`)
-npm create monorepo my-app -- --scope acme
+npm create honorepo my-app -- --scope acme
 
 # Fully non-interactive, skip install
-npm create monorepo my-app -- -y --no-install
+npm create honorepo my-app -- -y --no-install
 
 # pnpm and bun do not need the `--`
-pnpm create monorepo my-app --scope acme
-bun  create monorepo my-app --scope acme
+pnpm create honorepo my-app --scope acme
+bun  create honorepo my-app --scope acme
 ```
 
 > **`npm create` flag-passing.** With `npm create`, npm consumes flags before the bin script does. To pass options through, separate them with `--`. `pnpm create`, `yarn create`, and `bun create` do not have this restriction.
@@ -178,7 +178,7 @@ Run `pnpm setup:env` to create `.env` files from each `.env.example`.
 ## How the scaffolder works
 
 ```
-create-monorepo/
+create-honorepo/
 ├── bin/index.ts          CLI entry — argv parsing, help/version, dispatch
 ├── src/
 │   ├── cli.ts            Orchestrator: prompts → validate → scaffold → postinstall
@@ -191,7 +191,7 @@ create-monorepo/
 └── dist/index.js         What npm publishes (Bun-built, Node-compatible, ESM)
 ```
 
-Authoring is in TypeScript with Bun (`bun install`, `bun test`, `bun run dev`). The published artifact is plain JS produced by `bun build --target=node`, so end users only need Node 18+ to run `npm create monorepo`.
+Authoring is in TypeScript with Bun (`bun install`, `bun test`, `bun run dev`). The published artifact is plain JS produced by `bun build --target=node`, so end users only need Node 18+ to run `npm create honorepo`.
 
 ## Customizing the template
 

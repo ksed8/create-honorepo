@@ -23,7 +23,7 @@ export async function run(parsed: ParsedArgs): Promise<number> {
     process.stdout.write(
       pc.yellow(
         `  i Tip: with \`npm create\`, pass flags after \`--\`:\n` +
-          `        npm create monorepo my-app -- ${eaten}\n\n`,
+          `        npm create honorepo my-app -- ${eaten}\n\n`,
       ),
     );
   }
@@ -101,7 +101,7 @@ function getTemplateDir(): string {
 }
 
 function printBanner(): void {
-  process.stdout.write(`\n  ${pc.bold('Create monorepo')}\n\n`);
+  process.stdout.write(`\n  ${pc.bold('create-honorepo')}\n\n`);
 }
 
 function printNextSteps(name: string): void {

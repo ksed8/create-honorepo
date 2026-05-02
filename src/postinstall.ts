@@ -26,8 +26,8 @@ export function runGitInit(targetDir: string): void {
   const fallback = spawnSync(
     'git',
     [
-      '-c', 'user.name=create-monorepo',
-      '-c', 'user.email=create-monorepo@noreply.local',
+      '-c', 'user.name=create-honorepo',
+      '-c', 'user.email=create-honorepo@noreply.local',
       'commit', '-m', 'Initial commit',
     ],
     opts,

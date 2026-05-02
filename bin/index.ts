@@ -6,7 +6,7 @@ import { parseArgs } from 'node:util';
 import { run } from '../src/cli.js';
 
 const HELP = `Usage:
-  npm create monorepo <project-name> [options]
+  npm create honorepo <project-name> [options]
 
 Arguments:
   <project-name>     Lowercase letters, digits, hyphens
@@ -23,9 +23,9 @@ Options:
   -v, --version      Show CLI version
 
 Examples:
-  npm create monorepo my-app
-  npm create monorepo my-app -- --scope acme --no-install
-  npm create monorepo my-app -- -y
+  npm create honorepo my-app
+  npm create honorepo my-app -- --scope acme --no-install
+  npm create honorepo my-app -- -y
 `;
 
 function readVersion(): string {

@@ -1,11 +1,32 @@
 {
-  "name": "create-monorepo",
-  "version": "0.1.0",
-  "description": "Scaffold an opinionated TypeScript monorepo (pnpm + Turbo + Hono + Vite + Prisma)",
+  "name": "create-honorepo",
+  "version": "1.0.0",
+  "description": "Scaffold an opinionated TypeScript fullstack monorepo (pnpm + Turbo + Hono + Vite + Prisma) with end-to-end type safety",
   "type": "module",
   "license": "MIT",
   "bin": {
-    "create-monorepo": "./dist/index.js"
+    "create-honorepo": "dist/index.js"
+  },
+  "keywords": [
+    "monorepo",
+    "scaffold",
+    "create",
+    "typescript",
+    "hono",
+    "bun",
+    "vite",
+    "react",
+    "prisma",
+    "turborepo",
+    "pnpm"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ksed8/create-honorepo.git"
+  },
+  "homepage": "https://github.com/ksed8/create-honorepo#readme",
+  "bugs": {
+    "url": "https://github.com/ksed8/create-honorepo/issues"
   },
   "files": [
     "dist",
