@@ -1,6 +1,10 @@
 # create-honorepo
 
-Scaffold an opinionated, production-ready TypeScript fullstack monorepo with end-to-end type safety in one command.
+`create-honorepo` is a Bun-authored, Node-compatible CLI for scaffolding a full-stack TypeScript monorepo in one command.
+
+It creates a ready-to-run workspace with a Hono API, a background worker, a React frontend, Prisma, Postgres, Redis, shared Zod schemas, a typed Hono RPC client, pnpm workspaces, Turborepo, Biome, Vitest, Docker Compose, and CI defaults. The goal is to start with end-to-end type safety and practical project structure already wired together, without a codegen step.
+
+## Quick Start
 
 ```bash
 npm create honorepo my-app
@@ -10,11 +14,11 @@ pnpm --filter @my-app/db migrate:dev --name init
 pnpm dev
 ```
 
-You get a working API at `http://localhost:3001` and a React app at `http://localhost:5173` that calls it through a fully typed client — no codegen step.
+You get a working API at `http://localhost:3001` and a web app at `http://localhost:5173` that calls it through a fully typed client.
 
-## What you get
+## Generated Stack
 
-- **`apps/web`** — React 18 + Vite, with a Zod-validated env and a typed API client.
+- **`apps/web`** — React 18 frontend with a Zod-validated env and a typed API client.
 - **`apps/api`** — Hono on Bun, with CORS, request logging, error handling, and Zod-validated env + request bodies.
 - **`apps/worker`** — Bun background worker, ready for a queue consumer (BullMQ, scheduled tasks, etc.).
 - **`packages/api-client`** — Typed Hono RPC client. The frontend imports it and gets full autocomplete for every API route, request body, and response shape.
@@ -24,7 +28,7 @@ You get a working API at `http://localhost:3001` and a React app at `http://loca
 
 Plus: pnpm workspaces, Turborepo task graph (with Prisma generate as a build dep), Biome for lint+format, Vitest for tests, Docker Compose for local Postgres + Redis, GitHub Actions CI, Dependabot, EditorConfig, `.nvmrc`, `.npmrc`, and a clean initial git commit on `main`.
 
-## The pitch: end-to-end type safety with no codegen
+## Why it exists
 
 `apps/api` exports its route shape as `AppType`. `packages/api-client` consumes it via Hono RPC. `apps/web` calls the API through that client.
 
@@ -121,7 +125,7 @@ open http://localhost:5173
 my-app/
 ├── apps/
 │   ├── api/              Hono on Bun, with Zod env + request validation
-│   ├── web/              React + Vite, calls the API through a typed client
+│   ├── web/              React frontend, calls the API through a typed client
 │   └── worker/           Bun background worker
 ├── packages/
 │   ├── api-client/       Typed Hono RPC client (consumed by web)
