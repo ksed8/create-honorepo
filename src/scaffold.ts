@@ -36,9 +36,13 @@ function unhideName(name: string): string {
 }
 
 export function substitute(content: string, vars: ScaffoldVars): string {
+  // With an empty scope, "@__scope__/web" must become "my-app-web", not the invalid "@/web",
+  // so the scoped prefix is replaced as a unit before the bare tokens.
+  const packagePrefix = vars.scope ? `@${vars.scope}/` : `${vars.projectName}-`;
   return content
+    .replaceAll('@__scope__/', packagePrefix)
     .replaceAll('__projectName__', vars.projectName)
-    .replaceAll('__scope__', vars.scope);
+    .replaceAll('__scope__', vars.scope || vars.projectName);
 }
 
 export function scaffold(templateDir: string, targetDir: string, vars: ScaffoldVars): string[] {

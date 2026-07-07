@@ -4,8 +4,8 @@ A TypeScript fullstack monorepo scaffolded with pnpm workspaces and Turborepo.
 
 ## Prerequisites
 
-- Node.js 20+
-- pnpm 9+ (`corepack enable && corepack prepare pnpm@latest --activate`)
+- Node.js 22.12+
+- pnpm 10+ (`corepack enable && corepack prepare pnpm@latest --activate`)
 - Bun (`curl -fsSL https://bun.sh/install | bash`)
 - Docker (for local Postgres and Redis)
 
@@ -23,7 +23,7 @@ The API runs on `http://localhost:3001` and the web app on `http://localhost:517
 
 ## Project structure
 
-- `apps/web` — React frontend (Vite), uses `@scope/api-client` for typed API calls
+- `apps/web` — React frontend (Vite), uses `@__scope__/api-client` for typed API calls
 - `apps/api` — Hono API on Bun, with CORS, request logging, error handling, Zod env and request validation
 - `apps/worker` — Background worker on Bun, ready to extend with a queue consumer
 - `packages/config` — Shared TypeScript configs (base, react, node, bun)
@@ -67,7 +67,7 @@ Run `pnpm setup:env` after install to create `.env` files from each `.env.exampl
 
 ## Type-safe API calls
 
-The API exports its route shape as `AppType`, which `@scope/api-client` consumes via Hono RPC. This means the frontend gets full autocomplete and type-checking for every API endpoint, request body, and response shape, with no codegen step.
+The API exports its route shape as `AppType`, which `@__scope__/api-client` consumes via Hono RPC. This means the frontend gets full autocomplete and type-checking for every API endpoint, request body, and response shape, with no codegen step.
 
 ```ts
 import { createApiClient } from '@__scope__/api-client';

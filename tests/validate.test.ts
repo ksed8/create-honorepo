@@ -47,7 +47,7 @@ describe('validateName', () => {
     expect(validateName('my_app').ok).toBe(false);
   });
 
-  test('rejects reserved name node_modules', () => {
+  test('rejects node_modules (underscore fails the charset rule)', () => {
     expect(validateName('node_modules').ok).toBe(false);
   });
 
@@ -103,17 +103,17 @@ describe('validateScope', () => {
 
 describe('assertTargetDirEmpty', () => {
   test('passes when dir does not exist', () => {
-    const dir = join(tmpdir(), `cm-test-${Date.now()}-${Math.random()}`);
+    const dir = join(tmpdir(), `ch-test-${Date.now()}-${Math.random()}`);
     expect(assertTargetDirEmpty(dir).ok).toBe(true);
   });
 
   test('passes when dir exists and is empty', () => {
-    const dir = mkdtempSync(join(tmpdir(), 'cm-empty-'));
+    const dir = mkdtempSync(join(tmpdir(), 'ch-empty-'));
     expect(assertTargetDirEmpty(dir).ok).toBe(true);
   });
 
   test('fails when dir exists with files', () => {
-    const dir = mkdtempSync(join(tmpdir(), 'cm-nonempty-'));
+    const dir = mkdtempSync(join(tmpdir(), 'ch-nonempty-'));
     writeFileSync(join(dir, 'a.txt'), 'hi');
     const result = assertTargetDirEmpty(dir);
     expect(result.ok).toBe(false);
@@ -123,9 +123,16 @@ describe('assertTargetDirEmpty', () => {
   });
 
   test('fails when path is a file', () => {
-    const dir = mkdtempSync(join(tmpdir(), 'cm-file-'));
+    const dir = mkdtempSync(join(tmpdir(), 'ch-file-'));
     const filePath = join(dir, 'file');
     writeFileSync(filePath, '');
     expect(assertTargetDirEmpty(filePath).ok).toBe(false);
+  });
+
+  test('ignores .git and .DS_Store entries', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'ch-gitonly-'));
+    mkdirSync(join(dir, '.git'));
+    writeFileSync(join(dir, '.DS_Store'), '');
+    expect(assertTargetDirEmpty(dir).ok).toBe(true);
   });
 });

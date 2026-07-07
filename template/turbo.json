@@ -5,8 +5,8 @@
   "tasks": {
     "db:generate": {
       "cache": true,
-      "inputs": ["prisma/schema.prisma"],
-      "outputs": ["node_modules/.prisma/**", "node_modules/@prisma/client/**"]
+      "inputs": ["prisma/schema.prisma", "prisma.config.ts"],
+      "outputs": ["src/generated/**"]
     },
     "build": {
       "dependsOn": ["^build", "^db:generate", "db:generate"],
@@ -17,17 +17,11 @@
       "cache": false,
       "persistent": true
     },
-    "lint": {
-      "dependsOn": ["^db:generate", "db:generate"]
-    },
     "typecheck": {
       "dependsOn": ["^build", "^db:generate", "db:generate"]
     },
     "test": {
       "dependsOn": ["^build", "^db:generate", "db:generate"]
-    },
-    "clean": {
-      "cache": false
     }
   }
 }

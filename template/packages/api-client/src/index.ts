@@ -5,7 +5,7 @@ import { hc } from 'hono/client';
 // The returned client is fully typed against the API's routes via Hono RPC.
 //
 // Example usage in the frontend:
-//   import { createApiClient } from '@scope/api-client';
+//   import { createApiClient } from '@__scope__/api-client';
 //   const api = createApiClient(import.meta.env.VITE_API_URL);
 //   const res = await api.echo.$post({ json: { message: 'hi' } });
 //   const data = await res.json();

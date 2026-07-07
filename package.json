@@ -1,9 +1,10 @@
 {
   "name": "create-honorepo",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "Scaffold an opinionated TypeScript fullstack monorepo (pnpm + Turbo + Hono + Vite + Prisma) with end-to-end type safety",
   "type": "module",
   "license": "MIT",
+  "author": "Lorenzo Filippini",
   "bin": {
     "create-honorepo": "dist/index.js"
   },
@@ -35,7 +36,7 @@
     "LICENSE"
   ],
   "engines": {
-    "node": ">=18"
+    "node": ">=22"
   },
   "scripts": {
     "build": "bun build bin/index.ts --target=node --outdir dist --format=esm --sourcemap=external",

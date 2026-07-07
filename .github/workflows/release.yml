@@ -1,0 +1,51 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: read
+  id-token: write # npm provenance
+
+jobs:
+  publish:
+    name: Publish to npm
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.13
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          registry-url: https://registry.npmjs.org
+      - run: bun install --frozen-lockfile
+      - run: bun run typecheck
+      - run: bun test tests/
+      - run: bun run build
+      - name: Assert shebang survived the build
+        run: |
+          if [ "$(head -c 19 dist/index.js)" != "#!/usr/bin/env node" ]; then
+            echo "ERROR: dist/index.js missing shebang"
+            exit 1
+          fi
+      - name: Assert tag matches package.json version
+        run: |
+          node -e "
+            const v = require('./package.json').version;
+            if ('v' + v !== process.env.GITHUB_REF_NAME) {
+              console.error(\`tag \${process.env.GITHUB_REF_NAME} != package version v\${v}\`);
+              process.exit(1);
+            }
+          "
+      - name: Assert the tarball contains the template dotfile sources
+        run: |
+          npm pack --dry-run 2>&1 | tee pack.log
+          grep -q 'template/_gitignore' pack.log
+          grep -q 'template/_github/workflows/ci.yml' pack.log
+          grep -q 'dist/index.js' pack.log
+      - run: npm publish --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

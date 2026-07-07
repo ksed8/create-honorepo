@@ -26,6 +26,10 @@ function findEnvExamples(dir) {
 const examples = SEARCH_DIRS.flatMap((d) =>
   existsSync(join(ROOT, d)) ? findEnvExamples(join(ROOT, d)) : [],
 );
+// The root .env.example lives outside the searched dirs but feeds turbo's globalDependencies.
+if (existsSync(join(ROOT, '.env.example'))) {
+  examples.unshift(join(ROOT, '.env.example'));
+}
 
 for (const example of examples) {
   const target = example.replace(/\.example$/, '');

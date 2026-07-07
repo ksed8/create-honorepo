@@ -3,7 +3,7 @@ import { Hono } from 'hono';
 import { z } from 'zod';
 
 // Route definitions live here, separate from server bootstrap,
-// so @scope/api-client can import AppType without pulling in
+// so @__scope__/api-client can import AppType without pulling in
 // Node-specific code (env, process, etc.).
 export function buildRoutes() {
   return new Hono()
@@ -24,5 +24,5 @@ export function buildRoutes() {
     );
 }
 
-// Type used by @scope/api-client for end-to-end type safety.
+// Type used by @__scope__/api-client for end-to-end type safety.
 export type AppType = ReturnType<typeof buildRoutes>;

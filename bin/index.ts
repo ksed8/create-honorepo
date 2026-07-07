@@ -7,9 +7,11 @@ import { run } from '../src/cli.js';
 
 const HELP = `Usage:
   npm create honorepo <project-name> [options]
+  npm create honorepo .              (scaffold into the current empty directory)
 
 Arguments:
-  <project-name>     Lowercase letters, digits, hyphens
+  <project-name>     Lowercase letters, digits, hyphens — or "." to use the
+                     current directory (named after it)
 
 Options:
   --scope <name>     Package scope (e.g. acme → @acme/web)
@@ -40,22 +42,30 @@ function readVersion(): string {
   }
 }
 
-const { values, positionals } = parseArgs({
-  args: process.argv.slice(2),
-  allowPositionals: true,
-  strict: false,
-  options: {
-    scope: { type: 'string' },
-    'no-scope': { type: 'boolean' },
-    install: { type: 'boolean' },
-    'no-install': { type: 'boolean' },
-    git: { type: 'boolean' },
-    'no-git': { type: 'boolean' },
-    yes: { type: 'boolean', short: 'y' },
-    help: { type: 'boolean', short: 'h' },
-    version: { type: 'boolean', short: 'v' },
-  },
-});
+let values: Record<string, string | boolean | undefined>;
+let positionals: string[];
+try {
+  ({ values, positionals } = parseArgs({
+    args: process.argv.slice(2),
+    allowPositionals: true,
+    strict: true,
+    options: {
+      scope: { type: 'string' },
+      'no-scope': { type: 'boolean' },
+      install: { type: 'boolean' },
+      'no-install': { type: 'boolean' },
+      git: { type: 'boolean' },
+      'no-git': { type: 'boolean' },
+      yes: { type: 'boolean', short: 'y' },
+      help: { type: 'boolean', short: 'h' },
+      version: { type: 'boolean', short: 'v' },
+    },
+  }));
+} catch (err) {
+  const message = err instanceof Error ? err.message : String(err);
+  process.stderr.write(`\n  ✖ ${message}\n  Run with --help to see available options.\n`);
+  process.exit(1);
+}
 
 if (values.help) {
   process.stdout.write(HELP);

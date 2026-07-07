@@ -9,6 +9,7 @@ It creates a ready-to-run workspace with a Hono API, a background worker, a Reac
 ```bash
 npm create honorepo my-app
 cd my-app
+pnpm setup:env
 docker compose up -d
 pnpm --filter @my-app/db migrate:dev --name init
 pnpm dev
@@ -18,7 +19,7 @@ You get a working API at `http://localhost:3001` and a web app at `http://localh
 
 ## Generated Stack
 
-- **`apps/web`** — React 18 frontend with a Zod-validated env and a typed API client.
+- **`apps/web`** — React 19 frontend (Vite) with a Zod-validated env and a typed API client.
 - **`apps/api`** — Hono on Bun, with CORS, request logging, error handling, and Zod-validated env + request bodies.
 - **`apps/worker`** — Bun background worker, ready for a queue consumer (BullMQ, scheduled tasks, etc.).
 - **`packages/api-client`** — Typed Hono RPC client. The frontend imports it and gets full autocomplete for every API route, request body, and response shape.
@@ -62,14 +63,16 @@ The CLI prompts interactively for the package scope, whether to initialize a git
 
 | Flag | Description |
 | --- | --- |
-| `<project-name>` | Lowercase letters, digits, and hyphens. Becomes the directory name and root package name. |
+| `<project-name>` | Lowercase letters, digits, and hyphens. Becomes the directory name and root package name. Pass `.` to scaffold into the current empty directory, named after it. |
 | `--scope <name>` | Package scope (e.g. `acme` → `@acme/web`). Defaults to the project name. |
-| `--no-scope` | Force unscoped package names. |
+| `--no-scope` | Unscoped package names, prefixed with the project name (`my-app-web`, `my-app-db`, …). |
 | `--install` / `--no-install` | Install dependencies after scaffolding. Defaults to yes if `pnpm` is on `PATH`. |
 | `--git` / `--no-git` | Initialize a git repository. Defaults to yes if `git` is on `PATH`. |
 | `-y`, `--yes` | Accept all defaults; non-interactive. |
 | `-h`, `--help` | Show help. |
 | `-v`, `--version` | Show CLI version. |
+
+Unknown or malformed flags are rejected with an error (so a typo like `--no-instal` can't silently install).
 
 ### Examples
 
@@ -92,8 +95,8 @@ bun  create honorepo my-app --scope acme
 
 ## Requirements
 
-- **Node 18+** (to run the CLI)
-- **pnpm 9+** in the scaffolded project (`corepack enable && corepack prepare pnpm@latest --activate`)
+- **Node 22+** (to run the CLI; the scaffolded project requires 22.12+)
+- **pnpm 10+** in the scaffolded project — the project pins its exact pnpm via the `packageManager` field, so any modern pnpm will self-switch to it
 - **Bun 1.1+** to run the scaffolded `apps/api` and `apps/worker` (`curl -fsSL https://bun.sh/install | bash`)
 - **Docker** for local Postgres + Redis via `docker compose up -d`
 
@@ -137,7 +140,7 @@ my-app/
 ├── .github/
 │   ├── dependabot.yml    Weekly npm + GitHub Actions updates
 │   └── workflows/ci.yml  Lint, typecheck, test on push + PR
-├── docker-compose.yml    Postgres 16 + Redis 7
+├── docker-compose.yml    Postgres 18 + Redis 8
 ├── biome.json            Lint + format config
 ├── turbo.json            Task graph with Prisma generate as a build dep
 ├── tsconfig.json
@@ -176,8 +179,10 @@ Run `pnpm setup:env` to create `.env` files from each `.env.example`.
 - **Turbo treats `db:generate` as a build dependency**, so any task that needs Prisma's types runs it first if needed.
 - **`apps/api` exports `./routes`**, separate from server bootstrap. This lets the api-client import `AppType` without pulling in Bun/Node-only code.
 - **The initial git commit uses your `git config`** (user.name + user.email) if set, falling back to a placeholder identity only on machines without git configured.
+- **Install runs before the initial commit**, so `pnpm-lock.yaml` lands in it and the generated CI's `pnpm install --frozen-lockfile` passes on the very first push.
+- **Prisma 7 with the driver-adapter client** — `prisma.config.ts` in `packages/db` holds the CLI config, and the client connects through `@prisma/adapter-pg`.
 - **Biome instead of ESLint + Prettier** — single tool, fast, sane defaults.
-- **Vitest workspace config at the root** so a plain `vitest` runs every package's tests.
+- **Tests run per-package via `turbo run test`** (`pnpm test` at the root fans out to every package with a test script).
 
 ## How the scaffolder works
 
@@ -195,14 +200,14 @@ create-honorepo/
 └── dist/index.js         What npm publishes (Bun-built, Node-compatible, ESM)
 ```
 
-Authoring is in TypeScript with Bun (`bun install`, `bun test`, `bun run dev`). The published artifact is plain JS produced by `bun build --target=node`, so end users only need Node 18+ to run `npm create honorepo`.
+Authoring is in TypeScript with Bun (`bun install`, `bun test`, `bun run dev`). The published artifact is plain JS produced by `bun build --target=node`, so end users only need Node 22+ to run `npm create honorepo`.
 
 ## Customizing the template
 
 Every file the CLI emits lives under `template/` as a real, editable file — no heredocs.
 
 1. Clone this repo and edit files under `template/` directly. Dotfiles are stored as `_gitignore`, `_npmrc`, `_env.example`, etc., and renamed at scaffold time (npm strips dotfiles when packing tarballs).
-2. Variable substitution uses `__projectName__` and `__scope__` placeholders. Add a placeholder where you need it; the scaffolder will substitute on copy. (Mustache `{{...}}` was avoided to prevent collisions with JSX inline-style syntax.)
+2. Variable substitution uses `__projectName__` and `__scope__` placeholders. Package references must use the `@__scope__/name` form — with `--no-scope` the whole prefix is rewritten to `<projectName>-name`. Add a placeholder where you need it; the scaffolder will substitute on copy. (Mustache `{{...}}` was avoided to prevent collisions with JSX inline-style syntax.)
 3. Test your change: `bun test tests/` runs the snapshot test that catches accidental drift, and `bun run dev test-app --yes --no-install` scaffolds a fresh `./test-app/` directory you can inspect.
 4. Inside the scaffolded output, run `pnpm install`, `pnpm typecheck`, and `pnpm test` to confirm nothing is broken end-to-end.
 
@@ -224,7 +229,11 @@ When you change template files intentionally, regenerate the fixture so the snap
 UPDATE_SNAPSHOTS=1 bun test tests/
 ```
 
-The CI workflow (`.github/workflows/ci.yml`) runs the Bun toolchain plus a Node 18/20/22 smoke matrix that scaffolds a project, installs its deps under `pnpm`, and typechecks it — catching template breakage before merge.
+The CI workflow (`.github/workflows/ci.yml`) runs four jobs: the Bun toolchain (typecheck, tests, build), a smoke matrix (Ubuntu Node 22/24 + Windows) that scaffolds **with a real install** and runs typecheck/lint/test/build in the result, a scenarios job covering `--no-scope`, `--scope`, `.`-directory, and error paths, and an end-to-end job that boots Postgres/Redis in Docker, migrates, and curls the running API.
+
+## Releasing
+
+Releases are published by `.github/workflows/release.yml`: bump `version` in `package.json`, tag the commit `v<version>`, and push the tag. The workflow re-runs checks, verifies the tag matches the package version and that the tarball contains the template files, then runs `npm publish --provenance`. It needs an `NPM_TOKEN` repository secret (an npm automation token).
 
 ## License
 

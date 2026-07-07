@@ -30,34 +30,141 @@ jobs:
           retention-days: 1
 
   smoke:
-    name: Smoke (Node ${{ matrix.node }})
+    name: Smoke (${{ matrix.os }}, Node ${{ matrix.node }})
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        node: ['18', '20', '22']
+        include:
+          - os: ubuntu-latest
+            node: '22'
+          - os: ubuntu-latest
+            node: '24'
+          - os: windows-latest
+            node: '22'
+    defaults:
+      run:
+        shell: bash
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node }}
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.13
       - uses: actions/download-artifact@v4
         with:
           name: dist
           path: dist/
-      - run: chmod +x dist/index.js
-      - run: npm install -g pnpm@9
-      - name: Scaffold a project
+      - run: npm install -g pnpm@11
+      - name: Scaffold with install and git through the CLI
         run: |
-          mkdir -p /tmp/smoke
-          cd /tmp/smoke
-          node "$GITHUB_WORKSPACE/dist/index.js" smoke-app --yes --no-install
-      - name: Install dependencies in scaffolded project
+          mkdir -p ../smoke
+          cd ../smoke
+          node "$GITHUB_WORKSPACE/dist/index.js" smoke-app --yes
+      - name: Assert pnpm-lock.yaml is in the initial commit
+        run: git -C ../smoke/smoke-app ls-tree -r HEAD --name-only | grep -q '^pnpm-lock.yaml$'
+      - name: Validate the scaffolded project
         run: |
-          cd /tmp/smoke/smoke-app
-          pnpm install
-      - name: Typecheck scaffolded project
-        run: |
-          cd /tmp/smoke/smoke-app
+          cd ../smoke/smoke-app
+          pnpm setup:env
           pnpm typecheck
+          pnpm lint
+          pnpm test
+          pnpm build
+
+  scenarios:
+    name: CLI scenarios
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.13
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+      - run: npm install -g pnpm@11
+      - name: Unscoped scaffold (--no-scope)
+        run: |
+          mkdir -p /tmp/scen && cd /tmp/scen
+          node "$GITHUB_WORKSPACE/dist/index.js" plain-app --yes --no-scope --no-install --no-git
+          ! grep -rn '__scope__\|"@/' plain-app
+          grep -q '"name": "plain-app-web"' plain-app/apps/web/package.json
+          cd plain-app && pnpm install && pnpm typecheck
+      - name: Custom scope
+        run: |
+          cd /tmp/scen
+          node "$GITHUB_WORKSPACE/dist/index.js" scoped-app --yes --scope acme --no-install --no-git
+          grep -q '"name": "@acme/web"' scoped-app/apps/web/package.json
+      - name: Scaffold into current directory
+        run: |
+          mkdir -p /tmp/scen/in-place-app && cd /tmp/scen/in-place-app
+          node "$GITHUB_WORKSPACE/dist/index.js" . --yes --no-install --no-git
+          grep -q '"name": "in-place-app"' package.json
+      - name: Unknown flag exits nonzero
+        run: |
+          cd /tmp/scen
+          if node "$GITHUB_WORKSPACE/dist/index.js" x-app --no-instal; then
+            echo "ERROR: typo flag should have failed" && exit 1
+          fi
+      - name: Non-empty directory is refused
+        run: |
+          mkdir -p /tmp/scen/busy-app && touch /tmp/scen/busy-app/keep.txt && cd /tmp/scen
+          if node "$GITHUB_WORKSPACE/dist/index.js" busy-app --yes --no-install --no-git; then
+            echo "ERROR: non-empty dir should have been refused" && exit 1
+          fi
+
+  e2e:
+    name: E2E (docker + api + web)
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.13
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+      - run: npm install -g pnpm@11
+      - name: Scaffold with install
+        run: |
+          mkdir -p /tmp/e2e && cd /tmp/e2e
+          node "$GITHUB_WORKSPACE/dist/index.js" e2e-app --yes
+      - name: Boot services and run the migration
+        run: |
+          cd /tmp/e2e/e2e-app
+          pnpm setup:env
+          docker compose up -d --wait
+          pnpm --filter @e2e-app/db migrate:dev --name init
+      - name: Boot the API and hit it
+        run: |
+          cd /tmp/e2e/e2e-app/apps/api
+          bun run src/index.ts &
+          for i in $(seq 1 20); do
+            curl -sf http://localhost:3001/health && break
+            sleep 0.5
+          done
+          curl -sf http://localhost:3001/health | grep -q healthy
+          curl -sf -X POST http://localhost:3001/echo \
+            -H 'content-type: application/json' -d '{"message":"ci"}' | grep -q '"echoed":"ci"'
+      - name: Build the web app
+        run: |
+          cd /tmp/e2e/e2e-app
+          pnpm --filter @e2e-app/web build
+      - name: Teardown
+        if: always()
+        run: |
+          cd /tmp/e2e/e2e-app && docker compose down -v || true

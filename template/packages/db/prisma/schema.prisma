@@ -1,13 +1,14 @@
 // Starter schema. Replace with your real models.
-// Run `pnpm --filter <scope>/db migrate:dev --name <change-name>` after editing.
+// Run `pnpm --filter @__scope__/db migrate:dev --name <change-name>` after editing.
+// The database connection URL lives in prisma.config.ts (Prisma 7+).
 
 generator client {
-  provider = "prisma-client-js"
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
 }
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 model User {

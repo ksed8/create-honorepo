@@ -4,13 +4,13 @@ import { z } from 'zod';
 // These are inlined at build time and visible in the bundled JS.
 // Never put secrets in here.
 const EnvSchema = z.object({
-  VITE_API_URL: z.string().url(),
+  VITE_API_URL: z.url(),
 });
 
 const parsed = EnvSchema.safeParse(import.meta.env);
 
 if (!parsed.success) {
-  console.error('Invalid environment variables:', parsed.error.flatten().fieldErrors);
+  console.error('Invalid environment variables:', z.flattenError(parsed.error).fieldErrors);
   throw new Error('Invalid frontend environment configuration');
 }
 

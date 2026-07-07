@@ -8,6 +8,9 @@ build/
 .turbo/
 *.tsbuildinfo
 
+# Generated Prisma client (recreated by `pnpm install` / `pnpm db:generate`)
+packages/db/src/generated/
+
 # Environment
 .env
 .env.local

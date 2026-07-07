@@ -21,11 +21,18 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
-          cache: pnpm
+          node-version: 22
+          # Skip pnpm caching when no lockfile is committed yet (setup-node fails otherwise).
+          cache: ${{ hashFiles('pnpm-lock.yaml') != '' && 'pnpm' || '' }}
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        # pnpm defaults to --frozen-lockfile on CI, which fails before the first lockfile commit.
+        run: |
+          if [ -f pnpm-lock.yaml ]; then
+            pnpm install --frozen-lockfile
+          else
+            pnpm install --no-frozen-lockfile
+          fi
 
       - name: Generate Prisma client
         run: pnpm db:generate

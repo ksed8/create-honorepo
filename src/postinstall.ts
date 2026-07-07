@@ -1,8 +1,19 @@
 import { spawn, spawnSync } from 'node:child_process';
 import pc from 'picocolors';
 
+const IS_WIN = process.platform === 'win32';
+
+// pnpm is a `pnpm.cmd` shim on Windows: it cannot be spawned without a shell (ENOENT/EINVAL).
+// git ships a real .exe and must stay shell-less. Only ever pass fixed literal args through
+// here — user input in a shell:true spawn is command injection (CVE-2024-27980 class).
+function toolCommand(name: string): { cmd: string; shell: boolean } {
+  if (IS_WIN && name === 'pnpm') return { cmd: 'pnpm.cmd', shell: true };
+  return { cmd: name, shell: false };
+}
+
 export function detectTool(name: string): boolean {
-  const result = spawnSync(name, ['--version'], { stdio: 'ignore' });
+  const { cmd, shell } = toolCommand(name);
+  const result = spawnSync(cmd, ['--version'], { stdio: 'ignore', shell });
   return result.status === 0;
 }
 
@@ -44,7 +55,8 @@ export async function runPnpmInstall(targetDir: string): Promise<boolean> {
     const start = Date.now();
     const stop = startSpinner('Installing dependencies');
 
-    const child = spawn('pnpm', ['install'], { cwd: targetDir, stdio: ['ignore', 'pipe', 'pipe'] });
+    const { cmd, shell } = toolCommand('pnpm');
+    const child = spawn(cmd, ['install'], { cwd: targetDir, stdio: ['ignore', 'pipe', 'pipe'], shell });
     let stderr = '';
     let stdout = '';
     child.stdout?.on('data', (d) => { stdout += d.toString(); });

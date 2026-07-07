@@ -40,7 +40,7 @@ export async function runPrompts(initial: Defaults): Promise<Answers> {
       {
         type: initial.scope !== undefined ? null : 'text',
         name: 'scope',
-        message: 'Package scope',
+        message: 'Package scope (empty = unscoped names like <project>-web)',
         initial: (_prev, values) =>
           (initial.projectName ?? (values.projectName as string)) ?? '',
         validate: (value: string) => {
@@ -77,24 +77,49 @@ export async function runPrompts(initial: Defaults): Promise<Answers> {
   return { projectName, scope, install, git };
 }
 
-export function detectEatenFlags(): string | null {
-  const raw = process.env.npm_config_argv;
-  if (!raw) return null;
-  try {
-    const parsed = JSON.parse(raw) as { original?: string[] };
-    const original = parsed.original ?? [];
-    const ourArgs = process.argv.slice(2);
-    const flagsInOriginalNotInOurs = original.filter(
-      (arg) =>
-        arg.startsWith('--') &&
-        !ourArgs.includes(arg) &&
-        !arg.startsWith('--silent') &&
-        !arg.startsWith('--quiet') &&
-        !arg.startsWith('--loglevel'),
-    );
-    if (flagsInOriginalNotInOurs.length === 0) return null;
-    return flagsInOriginalNotInOurs.join(' ');
-  } catch {
-    return null;
+// When invoked as `npm create honorepo my-app --scope acme` (no `--`), npm consumes the
+// flags itself and exposes them only as npm_config_* environment variables. Detection is
+// best-effort: reconstruct any of OUR flags found there so the tip can show what to retype.
+export function detectEatenFlags(
+  env: Record<string, string | undefined> = process.env,
+  argv: string[] = process.argv.slice(2),
+): string | null {
+  // npm ≤6 published the full original argv; use it when present.
+  const legacy = env.npm_config_argv;
+  if (legacy) {
+    try {
+      const parsed = JSON.parse(legacy) as { original?: string[] };
+      const original = parsed.original ?? [];
+      const eaten = original.filter(
+        (arg) =>
+          arg.startsWith('--') &&
+          !argv.includes(arg) &&
+          !arg.startsWith('--silent') &&
+          !arg.startsWith('--quiet') &&
+          !arg.startsWith('--loglevel'),
+      );
+      if (eaten.length > 0) return eaten.join(' ');
+    } catch {
+      // fall through to the npm 7+ detection
+    }
   }
+
+  if (!env.npm_config_user_agent?.startsWith('npm')) return null;
+
+  const found: string[] = [];
+  const scope = env.npm_config_scope;
+  if (scope === 'false' && !argv.includes('--no-scope')) {
+    found.push('--no-scope');
+  } else if (scope && !argv.includes('--scope')) {
+    found.push(`--scope ${scope.startsWith('@') ? scope.slice(1) : scope}`);
+  }
+  for (const flag of ['yes', 'install', 'git'] as const) {
+    const value = env[`npm_config_${flag}`];
+    if (value === 'true' && !argv.includes(`--${flag}`) && !argv.includes('-y')) {
+      found.push(`--${flag}`);
+    } else if (value === 'false' && !argv.includes(`--no-${flag}`)) {
+      found.push(`--no-${flag}`);
+    }
+  }
+  return found.length > 0 ? found.join(' ') : null;
 }
