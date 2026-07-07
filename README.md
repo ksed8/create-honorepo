@@ -23,7 +23,7 @@ You get a working API at `http://localhost:3001` and a web app at `http://localh
 - **`apps/api`** — Hono on Bun, with CORS, request logging, error handling, and Zod-validated env + request bodies.
 - **`apps/worker`** — Bun background worker, ready for a queue consumer (BullMQ, scheduled tasks, etc.).
 - **`packages/api-client`** — Typed Hono RPC client. The frontend imports it and gets full autocomplete for every API route, request body, and response shape.
-- **`packages/db`** — Prisma schema + singleton client, shared across api and worker.
+- **`packages/db`** — Prisma 7 schema, `prisma.config.ts`, and a singleton client (via `@prisma/adapter-pg`), shared across api and worker.
 - **`packages/shared-types`** — Zod schemas with inferred TS types, shared across boundaries.
 - **`packages/config`** — Shared TypeScript configs (base, react, node, bun).
 
@@ -85,6 +85,10 @@ npm create honorepo my-app -- --scope acme
 
 # Fully non-interactive, skip install
 npm create honorepo my-app -- -y --no-install
+
+# Scaffold into the current (empty) directory, named after it
+mkdir my-app && cd my-app
+npm create honorepo .
 
 # pnpm and bun do not need the `--`
 pnpm create honorepo my-app --scope acme
@@ -162,6 +166,8 @@ my-app/
 | `pnpm setup:env` | Copy every `.env.example` to `.env`, skipping files that exist |
 | `pnpm --filter @<scope>/db migrate:dev --name <name>` | Create and apply a Prisma migration |
 | `pnpm --filter @<scope>/db studio` | Open Prisma Studio |
+
+For unscoped projects (`--no-scope`), the db package is named `<project>-db`, so the filter becomes `pnpm --filter <project>-db …`. The scaffolder's "Next steps" output always prints the right form.
 
 ## Environment variables
 

@@ -61,7 +61,7 @@ export async function runPrompts(initial: Defaults): Promise<Answers> {
         name: 'install',
         message: hasPnpm
           ? 'Install dependencies now?'
-          : `${pc.yellow('!')} pnpm not found. Install anyway? (will fail; install pnpm 9+ first)`,
+          : `${pc.yellow('!')} pnpm not found. Install anyway? (will fail; install pnpm 10+ first)`,
         initial: hasPnpm,
       },
     ],

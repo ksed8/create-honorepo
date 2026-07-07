@@ -27,7 +27,7 @@ The API runs on `http://localhost:3001` and the web app on `http://localhost:517
 - `apps/api` — Hono API on Bun, with CORS, request logging, error handling, Zod env and request validation
 - `apps/worker` — Background worker on Bun, ready to extend with a queue consumer
 - `packages/config` — Shared TypeScript configs (base, react, node, bun)
-- `packages/db` — Prisma schema and singleton client
+- `packages/db` — Prisma schema, CLI config (`prisma.config.ts`), and singleton client
 - `packages/shared-types` — Cross-boundary Zod schemas and inferred TS types
 - `packages/api-client` — Typed Hono RPC client used by the frontend
 
